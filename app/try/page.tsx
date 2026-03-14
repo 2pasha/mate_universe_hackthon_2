@@ -5,6 +5,9 @@ import { Navbar } from "@/components/navbar"
 import { UploadWizard } from "@/components/upload-wizard"
 import { ProcessingScreen } from "@/components/processing-screen"
 import { ResultScreen } from "@/components/result-screen"
+import { HistoryPanel } from "@/components/history-panel"
+import { saveEntry } from "@/lib/history"
+import type { HistoryEntry } from "@/lib/history"
 import { Shield } from "lucide-react"
 
 type AppState = "upload" | "processing" | "result"
@@ -23,6 +26,7 @@ export default function TryPage() {
   const [state, setState] = useState<AppState>("upload")
   const [uploadData, setUploadData] = useState<UploadData | null>(null)
   const [resultData, setResultData] = useState<ResultData | null>(null)
+  const [activeHistoryId, setActiveHistoryId] = useState<string | undefined>(undefined)
 
   const handleUploadComplete = (data: UploadData) => {
     setUploadData(data)
@@ -30,13 +34,22 @@ export default function TryPage() {
   }
 
   const handleProcessingComplete = (data: ResultData) => {
+    const entry = saveEntry(data)
+    setActiveHistoryId(entry.id)
     setResultData(data)
+    setState("result")
+  }
+
+  const handleHistorySelect = (entry: HistoryEntry) => {
+    setActiveHistoryId(entry.id)
+    setResultData({ tryOnImageUrl: entry.tryOnImageUrl, videoUrl: entry.videoUrl })
     setState("result")
   }
 
   const handleReset = () => {
     setUploadData(null)
     setResultData(null)
+    setActiveHistoryId(undefined)
     setState("upload")
   }
 
@@ -66,6 +79,7 @@ export default function TryPage() {
                 <Shield className="h-4 w-4 text-primary" />
                 <span>Your photos are encrypted and deleted within 24 hours</span>
               </div>
+              <HistoryPanel activeId={activeHistoryId} onSelect={handleHistorySelect} />
             </>
           )}
 
@@ -78,11 +92,14 @@ export default function TryPage() {
           )}
 
           {state === "result" && resultData && (
-            <ResultScreen
-              tryOnImageUrl={resultData.tryOnImageUrl}
-              videoUrl={resultData.videoUrl}
-              onReset={handleReset}
-            />
+            <>
+              <ResultScreen
+                tryOnImageUrl={resultData.tryOnImageUrl}
+                videoUrl={resultData.videoUrl}
+                onReset={handleReset}
+              />
+              <HistoryPanel activeId={activeHistoryId} onSelect={handleHistorySelect} />
+            </>
           )}
         </div>
       </div>

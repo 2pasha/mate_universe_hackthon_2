@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Check, Download, Heart, Link2, Pause, Play, RefreshCw, Share2, Twitter } from "lucide-react"
+import { Check, Download, Heart, Link2, Loader2, Maximize2, Pause, Play, RefreshCw, Share2, Twitter } from "lucide-react"
 
 interface ResultScreenProps {
   tryOnImageUrl: string
@@ -18,6 +18,7 @@ export function ResultScreen({ tryOnImageUrl, videoUrl, onReset }: ResultScreenP
   const [isSaved, setIsSaved] = useState(false)
   const [showShareMenu, setShowShareMenu] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const togglePlay = () => {
@@ -32,15 +33,32 @@ export function ResultScreen({ tryOnImageUrl, videoUrl, onReset }: ResultScreenP
     setIsPlaying(!isPlaying)
   }
 
-  const handleDownload = () => {
+  const handleFullscreen = () => {
+    if (!videoRef.current) return
+    videoRef.current.requestFullscreen()
+  }
+
+  const handleDownload = async () => {
     const url = viewMode === "video" ? videoUrl : tryOnImageUrl
     const filename = viewMode === "video" ? "tryon-360-video.mp4" : "tryon-image.jpg"
-    const a = document.createElement("a")
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+
+    setIsDownloading(true)
+    try {
+      const response = await fetch(url)
+      const blob = await response.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = blobUrl
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+    } catch {
+      window.open(url, "_blank")
+    } finally {
+      setIsDownloading(false)
+    }
   }
 
   const handleCopyLink = () => {
@@ -85,22 +103,22 @@ export function ResultScreen({ tryOnImageUrl, videoUrl, onReset }: ResultScreenP
         </button>
       </div>
 
-      <div className="relative mx-auto max-w-2xl overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-xl">
+      <div className="relative mx-auto max-w-lg overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-xl">
         {viewMode === "video" ? (
-          <div className="relative aspect-[9/16] max-h-[600px] bg-secondary md:aspect-video">
+          <div className="group relative flex justify-center bg-black">
             <video
               ref={videoRef}
               src={videoUrl}
               autoPlay
               loop
               playsInline
-              className="h-full w-full object-cover"
+              className="max-h-[70vh] w-auto"
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
             />
             <button
               onClick={togglePlay}
-              className="absolute inset-0 flex items-center justify-center bg-background/20 opacity-0 transition-opacity hover:opacity-100"
+              className="absolute inset-0 flex items-center justify-center bg-background/20 opacity-0 transition-opacity group-hover:opacity-100"
             >
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm">
                 {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
@@ -112,13 +130,13 @@ export function ResultScreen({ tryOnImageUrl, videoUrl, onReset }: ResultScreenP
             <img
               src={tryOnImageUrl}
               alt="Virtual try-on result"
-              className="max-h-[600px] w-auto object-contain"
+              className="max-h-[70vh] w-auto object-contain"
             />
           </div>
         )}
 
         <div className="flex items-center justify-between border-t border-border/50 bg-card/50 px-4 py-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {viewMode === "video" && (
               <button
                 onClick={togglePlay}
@@ -132,21 +150,36 @@ export function ResultScreen({ tryOnImageUrl, videoUrl, onReset }: ResultScreenP
             </span>
           </div>
 
-          <button
-            onClick={() => setIsSaved(!isSaved)}
-            className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
-              isSaved ? "bg-pink-500/20 text-pink-500" : "bg-secondary hover:bg-secondary/80"
-            }`}
-          >
-            <Heart className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            {viewMode === "video" && (
+              <button
+                onClick={handleFullscreen}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary transition-colors hover:bg-secondary/80"
+                title="Fullscreen"
+              >
+                <Maximize2 className="h-5 w-5" />
+              </button>
+            )}
+            <button
+              onClick={() => setIsSaved(!isSaved)}
+              className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+                isSaved ? "bg-pink-500/20 text-pink-500" : "bg-secondary hover:bg-secondary/80"
+              }`}
+            >
+              <Heart className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`} />
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-        <Button size="lg" className="gap-2 bg-primary hover:bg-primary/90" onClick={handleDownload}>
-          <Download className="h-4 w-4" />
-          Download {viewMode === "video" ? "Video" : "Image"}
+        <Button size="lg" className="gap-2 bg-primary hover:bg-primary/90" onClick={handleDownload} disabled={isDownloading}>
+          {isDownloading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          {isDownloading ? "Downloading..." : `Download ${viewMode === "video" ? "Video" : "Image"}`}
         </Button>
 
         <div className="relative">
