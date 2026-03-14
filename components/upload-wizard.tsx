@@ -3,19 +3,19 @@
 import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { 
-  Upload, 
-  Link2, 
-  ArrowRight, 
-  ArrowLeft, 
-  X, 
+import {
+  Upload,
+  Link2,
+  ArrowRight,
+  ArrowLeft,
+  X,
   Check,
   ImageIcon,
-  Loader2
 } from "lucide-react"
+import type { UploadData } from "@/app/try/page"
 
 interface UploadWizardProps {
-  onComplete: (data: { photo: File | null; clothing: { type: 'url' | 'file'; value: string | File } }) => void
+  onComplete: (data: UploadData) => void
 }
 
 export function UploadWizard({ onComplete }: UploadWizardProps) {
@@ -67,25 +67,22 @@ export function UploadWizard({ onComplete }: UploadWizardProps) {
     }
   }, [])
 
-  const handleUrlSubmit = async () => {
+  const handleUrlSubmit = () => {
     if (!clothingUrl) return
-    setIsValidatingUrl(true)
-    // Simulate URL validation
-    await new Promise(resolve => setTimeout(resolve, 1000))
     setClothingType('url')
-    setIsValidatingUrl(false)
-    setClothingPreview('/api/placeholder/200/300') // Placeholder for fetched image
+    setClothingPreview(clothingUrl)
   }
 
   const handleComplete = () => {
-    if (photo && (clothingUrl || clothingFile)) {
-      onComplete({
-        photo,
-        clothing: clothingType === 'url' 
-          ? { type: 'url', value: clothingUrl }
-          : { type: 'file', value: clothingFile! }
-      })
-    }
+    if (!photo || (!clothingUrl && !clothingFile)) return
+
+    onComplete({
+      photo,
+      clothing:
+        clothingType === "url"
+          ? { type: "url", value: clothingUrl }
+          : { type: "file", value: clothingFile! },
+    })
   }
 
   const clearPhoto = () => {
