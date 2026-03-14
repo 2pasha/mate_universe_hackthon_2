@@ -2,9 +2,32 @@
 
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Play, Shield, Zap } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
+import { useMemo, useRef, useState } from "react"
 
 export function HeroSection() {
+  const [sliderValue, setSliderValue] = useState(52)
+  const [isDragging, setIsDragging] = useState(false)
+  const sliderRef = useRef<HTMLDivElement | null>(null)
+  const dividerStyle = useMemo(() => ({ left: `${sliderValue}%` }), [sliderValue])
+  const beforeClipStyle = useMemo(
+    () => ({
+      clipPath: `inset(0 ${100 - sliderValue}% 0 0)`,
+      WebkitClipPath: `inset(0 ${100 - sliderValue}% 0 0)`
+    }),
+    [sliderValue]
+  )
+
+  const updateFromPointer = (clientX: number) => {
+    const node = sliderRef.current
+    if (!node) return
+    const { left, width } = node.getBoundingClientRect()
+    const positionX = Math.min(Math.max(clientX - left, 0), width)
+    const nextValue = Math.round((positionX / width) * 100)
+    setSliderValue(nextValue)
+  }
+
   return (
     <section className="relative min-h-screen overflow-hidden pt-24">
       {/* Background Effects */}
@@ -45,17 +68,13 @@ export function HeroSection() {
             Upload your photo, paste any product link, and watch AI transform you into a model wearing that outfit in seconds.
           </p>
 
-          {/* CTA Buttons */}
-          <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+          {/* CTA Button */}
+          <div className="mt-10 flex">
             <Button size="lg" asChild className="gap-2 bg-primary px-8 hover:bg-primary/90">
               <Link href="/try">
-                Start Free Trial
+                Try on your first outfit — free
                 <ArrowRight className="h-4 w-4" />
               </Link>
-            </Button>
-            <Button size="lg" variant="outline" className="gap-2 border-border/60 bg-transparent">
-              <Play className="h-4 w-4" />
-              Watch Demo
             </Button>
           </div>
 
@@ -67,50 +86,81 @@ export function HeroSection() {
             </div>
             <div className="h-4 w-px bg-border" />
             <div className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">10,000+</span> videos generated
+              <span className="font-semibold text-foreground">save 10,000</span> of your nerves
             </div>
           </div>
         </div>
 
-        {/* Right Content - Video Demo */}
+        {/* Right Content - Before/After Slider */}
         <div className="mt-16 flex-1 lg:mt-0">
           <div className="relative mx-auto max-w-lg">
             {/* Glassmorphism card */}
             <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 p-2 backdrop-blur-xl">
-              {/* Demo Video Placeholder */}
-              <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-secondary">
-                {/* Before/After Animation */}
-                <div className="absolute inset-0 flex">
-                  {/* Before side */}
-                  <div className="relative flex-1 border-r border-primary/50">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="mx-auto mb-4 h-32 w-24 rounded-lg bg-muted" />
-                        <span className="text-xs text-muted-foreground">Your Photo</span>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-4 left-4 rounded-full bg-background/80 px-3 py-1 text-xs backdrop-blur-sm">
-                      Before
-                    </div>
-                  </div>
-                  {/* After side */}
-                  <div className="relative flex-1">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="mx-auto mb-4 h-32 w-24 rounded-lg bg-gradient-to-br from-primary/30 to-accent/30" />
-                        <span className="text-xs text-muted-foreground">AI Result</span>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-4 right-4 rounded-full bg-primary/80 px-3 py-1 text-xs text-primary-foreground backdrop-blur-sm">
-                      After
-                    </div>
+              {/* Before/After Slider */}
+              <div
+                ref={sliderRef}
+                className="relative aspect-[4/5] overflow-hidden rounded-xl bg-secondary select-none"
+                style={{ touchAction: "none" }}
+                onPointerDown={(event) => {
+                  event.preventDefault()
+                  setIsDragging(true)
+                  updateFromPointer(event.clientX)
+                  event.currentTarget.setPointerCapture(event.pointerId)
+                }}
+                onPointerMove={(event) => {
+                  if (isDragging) updateFromPointer(event.clientX)
+                }}
+                onPointerUp={() => setIsDragging(false)}
+                onPointerLeave={() => setIsDragging(false)}
+                onPointerCancel={() => setIsDragging(false)}
+              >
+                <div className="pointer-events-none absolute inset-0">
+                  <Image
+                    src="/hero-after.png"
+                    alt="After"
+                    fill
+                    className="object-cover object-center select-none"
+                    draggable={false}
+                    priority
+                  />
+                </div>
+                <div className="pointer-events-none absolute inset-0" style={beforeClipStyle}>
+                  <Image
+                    src="/hero-before.png"
+                    alt="Before"
+                    fill
+                    className="object-cover object-center select-none"
+                    draggable={false}
+                    priority
+                  />
+                </div>
+
+                {/* Divider */}
+                <div className="absolute inset-y-0" style={dividerStyle}>
+                  <div className="absolute inset-y-0 -translate-x-1/2 border-l-2 border-primary/80" />
+                  <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/40 bg-background/80 p-2 shadow-lg backdrop-blur">
+                    <div className="h-10 w-10 rounded-full bg-primary/90" />
                   </div>
                 </div>
-                
-                {/* Play button overlay */}
-                <button className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-transform hover:scale-110">
-                  <Play className="h-6 w-6 fill-current" />
-                </button>
+
+                {/* Range input */}
+                <input
+                  aria-label="Before and after slider"
+                  className="pointer-events-none absolute inset-0 h-full w-full cursor-ew-resize opacity-0"
+                  max={100}
+                  min={0}
+                  onChange={(event) => setSliderValue(Number(event.target.value))}
+                  type="range"
+                  value={sliderValue}
+                />
+
+                {/* Labels */}
+                <div className="pointer-events-none absolute bottom-4 left-4 rounded-full bg-background/80 px-3 py-1 text-xs backdrop-blur-sm">
+                  Before
+                </div>
+                <div className="pointer-events-none absolute bottom-4 right-4 rounded-full bg-primary/80 px-3 py-1 text-xs text-primary-foreground backdrop-blur-sm">
+                  After
+                </div>
               </div>
             </div>
 
@@ -120,7 +170,7 @@ export function HeroSection() {
                 <div className="h-8 w-8 rounded-md bg-primary/20" />
                 <div>
                   <div className="text-xs font-medium">Product detected</div>
-                  <div className="text-xs text-muted-foreground">Blue Denim Jacket</div>
+                  <div className="text-xs text-muted-foreground">Black Jacket</div>
                 </div>
               </div>
             </div>
@@ -131,8 +181,7 @@ export function HeroSection() {
                   <Zap className="h-4 w-4 text-green-500" />
                 </div>
                 <div>
-                  <div className="text-xs font-medium">Processing</div>
-                  <div className="text-xs text-muted-foreground">~15 seconds</div>
+                  <div className="text-xs font-medium">Rendering your look</div>
                 </div>
               </div>
             </div>

@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Sparkles, Menu, X, Clock } from "lucide-react"
+import { Menu, X, Clock } from "lucide-react"
 import { useEffect, useState } from "react"
 import { getEntries } from "@/lib/history"
 
@@ -19,10 +20,16 @@ export function Navbar() {
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <Sparkles className="h-5 w-5 text-primary-foreground" />
+          <div className="relative h-24 w-24 overflow-hidden rounded-lg">
+            <Image
+              src="/logo.png"
+              alt="Akita logo"
+              fill
+              className="object-cover"
+              priority
+            />
           </div>
-          <span className="text-xl font-bold tracking-tight">WearAI</span>
+          <span className="text-xl font-bold tracking-tight">Akita</span>
         </Link>
 
         {/* Desktop Navigation */}
